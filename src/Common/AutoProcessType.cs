@@ -14,7 +14,8 @@ namespace Tlabs.Proc.Common {
   ///</code>
   ///</remarks>
   public abstract class AutoProcessType<TMsg, TRes> : IAutoProcessType {
-    const string MSG_SUFFIX= "Msg";
+    ///<summary>Message type suffix.</summary>
+    public const string MSG_SUFFIX= "Msg";
 
     ///<summary>Ctor from <paramref name="description"/> and optional <paramref name="name"/>.</summary>
     public AutoProcessType(string description, string? name= null) : this(null, description, name) { }
@@ -39,7 +40,7 @@ namespace Tlabs.Proc.Common {
     public Type ResultType => typeof(TRes);
 
     ///<inheritdoc/>
-    public AutoProcessRestriction? ExecRestriction { get; }
+    public AutoProcessRestriction? ExecRestriction { get; set; }
 
     ///<inheritdoc/>
     public override bool Equals(object? obj) => obj is AutoProcessType<TMsg, TRes>;

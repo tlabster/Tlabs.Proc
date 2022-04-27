@@ -35,7 +35,7 @@ namespace Tlabs.Proc.Service.Config.Job {
     }
 
     ///<inheritdoc/>
-    protected override void Dispose(bool disposing) {
+    protected override void DoDispose(bool disposing) {
       if (!disposing) return;
       var p= procedure as IDisposable;
       p?.Dispose();

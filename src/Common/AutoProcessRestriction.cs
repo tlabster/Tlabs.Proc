@@ -21,10 +21,10 @@ namespace Tlabs.Proc.Common {
     readonly Regex tokPattern;
 
     ///<summary>Explicit convertion from string into <see cref="AutoProcessRestriction"/>.</summary>
-    public static explicit operator AutoProcessRestriction(string ctxState) => new AutoProcessRestriction(ctxState);
+    public static explicit operator AutoProcessRestriction(string restrictedState) => new AutoProcessRestriction(restrictedState);
 
     ///<summary>Explicit convertion from string array into <see cref="AutoProcessRestriction"/>.</summary>
-    public static explicit operator AutoProcessRestriction(string[] ctxStates) => new AutoProcessRestriction(ctxStates);
+    public static explicit operator AutoProcessRestriction(string[] restrictedStates) => new AutoProcessRestriction(restrictedStates);
 
     ///<summary>Ctor from <paramref name="stateTokens"/>.</summary>
     public AutoProcessRestriction(params string[]? stateTokens) {
@@ -36,8 +36,8 @@ namespace Tlabs.Proc.Common {
         throw new ArgumentException("Invalid state value", nameof(stateTokens));
     }
 
-    ///<summary>True if <paramref name="ctxMsg"/> is restricted by this <see cref="AutoProcessRestriction"/>.</summary>
-    public bool IsRestricted(IStatefulMessage? ctxMsg) => null != ctxMsg && tokPattern.IsMatch(ctxMsg.StateCtx ?? string.Empty);
+    ///<summary>True if <paramref name="msg"/> is restricted by this <see cref="AutoProcessRestriction"/>.</summary>
+    public bool IsRestricted(IStatefulMessage? msg) => null != msg && tokPattern.IsMatch(msg.StateCtx ?? string.Empty);
 
     ///<summary>List of restricted state tokens.</summary>
     public List<string> RstrictedStates => STATE_PAT.Matches(tokPattern.ToString())

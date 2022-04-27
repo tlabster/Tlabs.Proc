@@ -44,6 +44,8 @@ namespace Tlabs.Proc {
     readonly string processName;
     /// <summary>Ctor from process <paramref name="name"/>.</summary>
     public AutoProcessExecutionException(string name) { this.processName= name; }
+    /// <summary>Ctor from process <paramref name="name"/> and <paramref name="message"/>.</summary>
+    public AutoProcessExecutionException(string name, string message) : this(name) { errors.Add(new Error(message)); }
     static readonly char[] crlf= new char[] {'\r', '\n'};
     
     /// <summary>Ctor from process <paramref name="name"/> and <paramref name="e"/>.</summary>
@@ -58,7 +60,7 @@ namespace Tlabs.Proc {
         msg= r.Replace(msg, ""); //Try to remove exception name
       }
 
-      var err= new Error(Msg: $"Procedure {procedureName} has failed: {msg}", Ex: ex ?? this.InnerException);
+      var err= new Error(Msg: $"Procedure {procedureName} of {processName} has failed: {msg}", Ex: ex ?? this.InnerException);
       errors.Add(err);
       return err.Msg;
     }
@@ -74,6 +76,6 @@ namespace Tlabs.Proc {
       }
     }
 
-    record Error(string Msg, Exception? Ex);
+    record Error(string Msg, Exception? Ex= null);
   }
 }

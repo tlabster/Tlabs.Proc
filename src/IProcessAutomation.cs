@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
+using Tlabs.Misc;
 using Tlabs.Proc.Common;
 
 namespace Tlabs.Proc {
@@ -8,13 +9,16 @@ namespace Tlabs.Proc {
   ///<summary>Interface of a process automation service.</summary>
   public interface IProcessAutomation {
     ///<summary>Enumeration of all registered <see cref="IAutoProcessType"/>(s).</summary>
-    IEnumerable<IAutoProcessType> AllProcessTypes();
+    IEnumerable<IAutoProcessType> AllProcessTypes { get; }
 
     ///<summary><see cref="IAutoProcessType"/> with <paramref name="name"/>.</summary>
     IAutoProcessType ProcessType(string name);
 
     ///<summary><see cref="IAutoProcedureDescriptor"/> with procedure <paramref name="name"/>.</summary>
     IAutoProcedureDescriptor ProcedureDescriptor(string name);
+
+    ///<summary>Procedure config(s) by process type.</summary>
+    public IEnumerable<IProcedureConfig> ProcessProcedures(IAutoProcessType pType);
 
     ///<summary>Execute automation process with <paramref name="processType"/> and message type <paramref name="msg"/> returning result of <typeparamref name="TRes"/>
     ///(with optional <paramref name="timeout"/>).

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 using Tlabs.JobCntrl;
@@ -26,7 +25,7 @@ namespace Tlabs.Proc.Service.Config.Job {
   ///<summary>Generic LOP automation job .</summary>
   public class AutoProcessJob<TMsg, TRes> : AutoProcessJob where TMsg : class where TRes : class {
     static readonly ILogger logger= Tlabs.App.Logger<AutoProcessJob>();
-    IProcessAutomation pauto;
+    readonly IProcessAutomation pauto;
     ///<summary>Ctor from <paramref name="pauto"/>.</summary>
     public AutoProcessJob(IProcessAutomation pauto) { this.pauto= pauto; }
 
@@ -46,16 +45,14 @@ namespace Tlabs.Proc.Service.Config.Job {
       else o= runProperties[propName= PROP_PROCESS_MSG];
       if (o is not TMsg msg) throw new AutoProcessException($"Invalid property {nameof(AutoProcessJob)}.{propName}: {o}");
 
-      var resVal= pauto.ExecuteProcess<TMsg, TRes>(pType, msg).GetAwaiter().GetResult();  //***TODO: Get rid of this blocking wait.
-      if (ConfigProperties.GetBool(this.Properties, PROP_NO_RESULT, false)) return CreateResult(true);   //suppress result
-      var res= new Dictionary<string, object> {
-        [PROP_RESULT]= resVal
-      };
-      return CreateResult(res);
+      return CreateAsyncResult(pauto.ExecuteProcess<TMsg, TRes>(pType, msg), processRes =>
+          ConfigProperties.GetBool(this.Properties, PROP_NO_RESULT, false)
+        ? CreateResult(true)   //suppress result
+        : CreateResult(new Dictionary<string, object> { [PROP_RESULT]= processRes })
+      );
     }
-
     ///<inheritdoc/>
-    protected override void Dispose(bool disposing) {
+    protected override void DoDispose(bool disposing) {
       if (!disposing) return;
     }
 

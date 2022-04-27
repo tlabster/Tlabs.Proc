@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Extensions.Logging;
 
 using Tlabs.JobCntrl;
@@ -10,24 +11,24 @@ using Tlabs.JobCntrl.Model.Intern.Starter;
 using Tlabs.Misc;
 using Tlabs.Data.Serialize;
 using Tlabs.Proc.Common;
+using Tlabs.Proc.Service.Config.Job;
 
 namespace Tlabs.Proc.Service.Config {
   using Props= Dictionary<string, object>;
 
   ///<summary>Process automation service configuration implemented with <see cref="IJobControl"/> configuration.</summary>
   public class ProcessAutomationJobConfig : IProcessAutomationConfig {
-    internal const string MASTER_PROCESS_STARTER= "AutoProcess-MSG";
-    internal const string MASTER_CHAINED_STARTER= "AutoProcess-CHAIN";
-    internal const string MASTER_SCHEDULE_STARTER= "AutoProcess-SCHEDULE";
-    internal IReadOnlyDictionary<string, object> PARLL_STARTER_PROPS= new Dictionary<string, object> {
-      [MasterStarter.RPROP_PARALLEL_START]= true
-    };
-
-    static readonly ILogger log= App.Logger<ProcessAutomationJobConfig>();
+    static readonly ILogger log= App.Logger<IProcessAutomationConfig>();
 
     readonly IJobControl jobCntrlRuntime;
     readonly ISerializer<Data.AutoProcessCfgData> cfgSeri;
     readonly IJobCntrlConfigurator jobCntrlCfg;
+    readonly Data.AutoProcessCfgData defaultConfig;
+
+    /* Procedure (descriptor) by IAutoProcessType:
+     */
+    readonly DictionaryList<IAutoProcessType, IAutoProcedureDescriptor> typedProcedures= new ();
+
 
     ///<summary>Ctor from DI services.</summary>
     public ProcessAutomationJobConfig(IJobControl jobCntrlRuntime,
@@ -40,89 +41,192 @@ namespace Tlabs.Proc.Service.Config {
       this.jobCntrlRuntime= jobCntrlRuntime;
       this.cfgSeri= cfgSeri;
       this.NamedPTypes= setupNamedPTypes(pTypes);
-      this.jobCntrlCfg= jobCntrlConfigs.First();
+      this.jobCntrlCfg= jobCntrlConfigs.First()
+                                       .SetupAutoProcessMasterStarter()
+                                       .SetupProcessJobCntrlMasters(pTypes)
+                                       .SetupProcedureJobMasters(procedureDesciptors.Concat(rsltProcedureDesc.Cast<IAutoProcedureDescriptor>())
+                                                                                    .Concat(dfltProcedureDesc.Cast<IAutoProcedureDescriptor>()),
+                                                                 typedProcedures);
 
-      setupJobCntrlMasterStarter();
-      /*  Define a JobCntrl Starter and auto job for each process type:
+      /* Configure per default result returning processors:
        */
-      foreach (var pType in pTypes) {
-        setupProcessJobCntrlMaster(pType);
+      foreach (var procDesc in rsltProcedureDesc.Cast<IAutoProcedureDescriptor>())
+        SetProcedureStatus(procDesc, enabled: true, resultReturning: true);
+
+      /* Configure per default connected processors:
+       */
+      foreach (var procDesc in dfltProcedureDesc.Cast<IAutoProcedureDescriptor>())
+        SetProcedureStatus(procDesc, enabled: true, resultReturning: false);
+
+      defaultConfig= currentConfig();
+
+    }
+
+    ///<inheritdoc/>
+    public IReadOnlyDictionary<string, IAutoProcessType> NamedPTypes { get; }
+
+    ///<inheritdoc/>
+    public IEnumerable<IProcedureConfig> ProcessProcedures(IAutoProcessType pType) {
+      lock(syncLock) {
+        if (typedProcedures.TryGetValue(pType, out var configs))
+          return jobCntrlCfg.ConvertToProcedureConfig(configs);
+        return Enumerable.Empty<IProcedureConfig>();
       }
     }
 
-    ///<summary>Dictionary of <see cref="IAutoProcessType"/>(s) indexed by process name.</summary>
-    public IReadOnlyDictionary<string, IAutoProcessType> NamedPTypes { get; }
+    ///<inheritdoc/>
+    public IAutoProcedureDescriptor ProcedureDescriptor(string name) => typedProcedures.Values.Single(pd => name == pd.Name);
 
-    ///<summary>Dictionary list of <see cref="IAutoProcedureDescriptor"/> (s) indexed by <see cref="IAutoProcessType"/>.</summary>
-    public IReadOnlyDictList<IAutoProcessType, IAutoProcedureDescriptor> ProcessProcedures => throw new System.NotImplementedException();
-
-
-    IJobCntrlConfigurator setupJobCntrlMasterStarter()
-      => jobCntrlCfg.DefineMasterStarter(MASTER_PROCESS_STARTER,
-                                        "Message based LOP-Job starter.",
-                                        typeof(MessageSubscription).AssemblyQualifiedName,
-                                        PARLL_STARTER_PROPS)  //enable parallel starter activation
-                    .DefineMasterStarter(MASTER_CHAINED_STARTER,
-                                        "Follow-up LOP auto starter.",
-                                        typeof(Chained).AssemblyQualifiedName,
-                                        PARLL_STARTER_PROPS)  //enable parallel starter activation
-                    .DefineMasterStarter(MASTER_SCHEDULE_STARTER,
-                                        "Time scheduled LOP auto starter.",
-                                        typeof(TimeSchedule).AssemblyQualifiedName);
-
-    IJobCntrlConfigurator setupProcessJobCntrlMaster(IAutoProcessType pType) {
-      var starterName= buildStarterName(pType);
-      var subject= buildMsgSubject(pType);
-      jobCntrlCfg.DefineStarter(buildStarterName(pType), MASTER_PROCESS_STARTER, pType.Description, new Props {
-        [MessageSubscription.PROP_MSG_SUBJECT]= subject,
-        [MessageSubscription.PROP_RET_RESULT]= true
-      });
-      log.LogDebug("Starter {name} listening on subject {subj} for process {op} defined.", starterName, subject, pType.Name);
-
-      Type autoJobType= typeof(Job.AutoProcessJob<,>).MakeGenericType(pType.MsgType, pType.ResultType);
-      var autoMaster = buildAutoMasterName(buildAutomationName(pType));
-      jobCntrlCfg.DefineMasterJob(autoMaster, "LOP automation job", autoJobType.AssemblyQualifiedName, new Props {
-        [BaseJob.PROP_LOGLEVEL]= "Debug",
-        [Job.AutoProcessJob.PROP_PTYPE]= pType
-      });
-      log.LogDebug("Automation job {name} for process {prcs} defined.", autoMaster, pType.Name);
-      return jobCntrlCfg;
+    ///<inheritdoc/>
+    public IEnumerable<ITimeScheduleControl> TimeSchedulesByType(IAutoProcessType pType) {
+      lock (syncLock) {
+        return jobCntrlCfg.AllCntrlSchedules(this, pType.Name);
+      }
     }
 
-    static Dictionary<string, IAutoProcessType> setupNamedPTypes(IEnumerable<IAutoProcessType> pTypes) {
+    ///<inheritdoc/>
+    public IEnumerable<ISequelControl> ProcessSequelsByTypeType(IAutoProcessType precursorType, bool enabledOnly = true) {
+      lock (syncLock) {
+        var starterName= JobCfg.SequelStarterName(precursorType);
+        var followupTypes= NamedPTypes.Values
+                                      .Where(t => precursorType.ResultType.IsAssignableFrom(t.MsgType));
+        // left outer join of sequel types with autoJobs
+        var jobsByPTypes= followupTypes.GroupJoin(jobCntrlCfg.JobCntrlCfg.ControlCfg.Jobs,
+                                                   ptype => JobCfg.CntrlJobName(starterName, JobCfg.AutoCntrlName(ptype)),
+                                                   job => job.Name,
+                                                   (ptype, job) => new { OpType= ptype, AutoJob= job })
+                                       .ToList();
+        return jobsByPTypes.SelectMany( grp        => grp.AutoJob.DefaultIfEmpty(),
+                                       (grp, job)  => new SequelControl(precursorType, grp.OpType, null != job))
+                           .Where(sq => !enabledOnly || sq.IsEnabled);
+      }
+    }
+
+    ///<inheritdoc/>
+    public void SetProcedureStatus(IAutoProcedureDescriptor procDesc, bool enabled, bool resultReturning, IReadOnlyDictionary<string, object?>? @params= null) {
+      lock (syncLock) {
+        var jobName= procDesc.JobName();
+        var procJob= jobCntrlCfg.JobCntrlCfg.ControlCfg.Jobs.FirstOrDefault(job => jobName == job.Name);
+        if (enabled) {
+          if (null != procJob) return;   //already enabled
+          if (!resultReturning) @params= new ConfigProperties(@params, new Props { [Job.AutoProcessJob.PROP_NO_RESULT]= true });
+          jobCntrlCfg.DefineJob(jobName, procDesc.Name, procDesc.ProcessType.StarterName(), procDesc.Description, @params);
+        }
+        else {
+          if (null == procJob) return;   //already disabled
+          jobCntrlCfg.JobCntrlCfg.ControlCfg.Jobs.Remove(procJob);
+        }
+      }
+    }
+
+    ///<inheritdoc/>
+    public string? SetControlSchedule(IAutoProcessType pType, string scheduleId, string? timePattern, object? message, bool enabled) {
+      lock (syncLock) {
+        return jobCntrlCfg.SetControlSchedule(pType, scheduleId, timePattern, message, enabled);
+      }
+    }
+
+    ///<inheritdoc/>
+    public void SetControlSequel(ISequelControl sequel, bool enabled) {
+      lock(syncLock) {
+        jobCntrlCfg.SetControlSequel(sequel, enabled);
+      }
+    }
+    ///<inheritdoc/>
+    public void LoadConfiguration(Stream strm) {
+      lock (syncLock) configure(cfgSeri.LoadObj(strm));
+    }
+
+    ///<inheritdoc/>
+    public void ResetConfiguration() {
+      lock (syncLock) {
+        configure(defaultConfig);
+        applyJobCntrlCfg();
+        ConfigStorage.CleanUp();
+      }
+    }
+
+    ///<inheritdoc/>
+    public T WithExclusiveAccess<T>(Func<T> perform) {
+      lock(syncLock) return perform();
+    }
+
+    object syncLock => this.jobCntrlCfg;
+
+    private void applyJobCntrlCfg() {
+      jobCntrlRuntime.Stop();
+      jobCntrlRuntime.Init();
+      jobCntrlRuntime.Start();
+    }
+    private Data.AutoProcessCfgData currentConfig() {
+      return new Data.AutoProcessCfgData {
+        PTypes=         NamedPTypes.Values
+                                   .Where(tp => null != tp.ExecRestriction)
+                                   .Select(tp => new Data.AutoProcessCfgData.ProcessTypeData { PType= tp.Name, RestrictedStates= tp.ExecRestriction?.ToString() })
+                                   .ToList(),
+        Procedures=     jobCntrlCfg.ConvertToProcedureConfig(typedProcedures.Values)
+                                   .Where(pd => pd.IsEnabled)
+                                   .Select(pd => ProcedureConfig.ToEntity(pd)).ToList(),
+        CntrlSchedules= NamedPTypes.Values
+                                   .SelectMany(ptype => TimeSchedulesByType(ptype))
+                                   .Select(s => TimeScheduleControl.ToEntity(s)).ToList(),
+        CntrlSequels=   NamedPTypes.Values
+                                   .SelectMany(ptype => ProcessSequelsByTypeType(ptype))
+                                   .Select(sq => SequelControl.ToEntity(sq)).ToList()
+      };
+    }
+
+    private void configure(Data.AutoProcessCfgData autoCfg) {
       try {
-        var namedPTypes = pTypes.ToDictionary(p => p.Name);
+        var typedProcConfigs= new DictionaryList<IAutoProcessType, IProcedureConfig>();
+        foreach (var procCfg in autoCfg.Procedures.Select(p => p.AsProcedureConfig(this)).Where(p => null != p))
+          typedProcConfigs.Add(procCfg!.Descriptor.ProcessType, procCfg);
+
+        foreach (var pair in typedProcConfigs) {
+          foreach (var procCfg in ProcessProcedures(pair.Key).Where(p => p.IsEnabled))          //disable current/default settings
+            SetProcedureStatus(procCfg.Descriptor, false, false, null);
+          foreach (var procCfg in pair.Value)                                                   //connect new config
+            SetProcedureStatus(procCfg.Descriptor, true, procCfg.HasResult, procCfg.ProcedureParams);
+        }
+
+        foreach (var sch in jobCntrlCfg.AllCntrlSchedules(this) .ToList())
+          SetControlSchedule(sch.ProcessType, sch.ScheduleId, null, null, false);               //disbale all current
+        foreach (var sch in autoCfg.CntrlSchedules.Select(s => s.AsTimeSchedule(this)))
+          if (null != sch) SetControlSchedule(sch.ProcessType, sch.ScheduleId, sch.TimePattern, sch.Message, true);
+
+        foreach (var seq in jobCntrlCfg.AllSequelControls(this).ToList())                       //disable all current sequel(s)
+          SetControlSequel(seq, false);
+        foreach (var seq in autoCfg.CntrlSequels.Select(s => s.AsSequel(this)))
+          if (null != seq) SetControlSequel(seq, true);
+
+        applyProcessRestrictions(autoCfg.PTypes);
+
+      }
+      catch (Exception e) { throw new AutoProcessException($"Invalid {nameof(Data.AutoProcessCfgData)}", e); }
+    }
+
+    void applyProcessRestrictions(List<Data.AutoProcessCfgData.ProcessTypeData> pTypeData) {
+      foreach (var pdat in pTypeData) {
+        var pType= NamedPTypes[pdat.PType ?? "?"];
+
+        if (!string.IsNullOrEmpty(pdat.RestrictedStates))
+          pType.ExecRestriction= (AutoProcessRestriction)pdat.RestrictedStates;
+        else {
+          var dflt= defaultConfig.PTypes.SingleOrDefault(d => d.PType == pdat.PType);
+          if (!string.IsNullOrEmpty(dflt?.RestrictedStates))
+            pType.ExecRestriction= (AutoProcessRestriction)dflt.RestrictedStates;
+        }        
+      }
+    }
+
+    static IReadOnlyDictionary<string, IAutoProcessType> setupNamedPTypes(IEnumerable<IAutoProcessType> pTypes) {
+      try {
+        var namedPTypes= new LookupTable<string, IAutoProcessType>(pTypes.ToDictionary(p => p.Name), name => throw new InvalidAutoProcessTypeException(name));
         log.LogDebug("{cnt} process types discovered from service provider.", namedPTypes.Count);
         return namedPTypes;
       }
       catch (ArgumentException e) { throw new AutoProcessException("Duplicate process type name.", e); }
     }
-
-    const string SUBJECT_PFX= "BPA.";
-    const string STARTER_SFX= "-Starter";
-    const string AUTO_SFX= "-Automation";
-    const string CHAIN_SFX= "-Sequel";
-    const char CHAIN_DELIM= '>';
-    const string SCHEDULE_SFX= "-Schedule";
-    const string MASTER_AUTOJOB_SFX= ":MasterAutoJob";
-    const string AUTOJOB_SFX= ":AutoJob";
-    const string AUTO_CHAINEDJOB_SFX= AUTO_SFX + AUTOJOB_SFX;
-    const string PROCEDURE_DELIM= "-=>";
-
-    static string buildMsgSubject(IAutoProcessType pt) => SUBJECT_PFX + pt.Name;
-    static string? pTypeFromMsgSubject(string subject) =>   subject.StartsWith(SUBJECT_PFX, StringComparison.Ordinal)
-                                                          ? subject[SUBJECT_PFX.Length..]
-                                                          : null;
-    static string buildStarterName(string pType) => pType + STARTER_SFX;
-    static string buildStarterName(IAutoProcessType pt) => buildStarterName(pt.Name);
-    static string buildProcedureJobNamePfx(IAutoProcessType pt) => pt.Name + PROCEDURE_DELIM;
-    static string buildProcedureJobName(IAutoProcedureDescriptor pd) => buildProcedureJobNamePfx(pd.ProcessType) + pd.Name;
-    static string buildAutomationName(IAutoProcessType pt) => pt.Name + AUTO_SFX;
-    static string buildAutoMasterName(string autoName) => autoName + MASTER_AUTOJOB_SFX;
-    static string buildAutoJobName(string starterName, string? autoName= null)
-      => $"{starterName}{(string.IsNullOrEmpty(autoName) ? string.Empty : (CHAIN_DELIM+autoName))}{AUTOJOB_SFX}";
-    static string buildFollowupStarterName(IAutoProcessType pt) => pt.Name + CHAIN_SFX;
-    static string buildScheduledStarterName(IAutoProcessType pt, string scheduleId) => $"{pt.Name}@{scheduleId}{SCHEDULE_SFX}";
 
   }
 }

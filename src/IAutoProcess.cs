@@ -27,7 +27,7 @@ namespace Tlabs.Proc {
     Type ResultType { get; }
     /// <summary><see cref="AutoProcessRestriction"/> to be checked with a <see cref="IStatefulMessage"/>.</summary>
     /// <remarks>A process execution with a <see cref="IStatefulMessage"/> that matches the <see cref="AutoProcessRestriction"/> is refused.</remarks>
-    AutoProcessRestriction? ExecRestriction { get; }
+    AutoProcessRestriction? ExecRestriction { get; set; }
   }
 
   ///<summary>Interface of an automation process descriptor.</summary>

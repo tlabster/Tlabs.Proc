@@ -6,10 +6,10 @@ namespace Tlabs.Proc.Common {
   public abstract class AutoProcedurDescriptor<TProc, TMsg, TRes> : IAutoProcedureDescriptor<TMsg, TRes>
     where TProc : IAutoProcedure<TMsg, TRes> where TMsg : class where TRes : notnull {
     ///<summary>Ctor from <paramref name="prcsType"/>.</summary>
-    protected AutoProcedurDescriptor(string? description, AutoProcessType<TMsg, TRes> prcsType, string? name= null) {
-      if (null == (this.ProcessType= prcsType)) throw new ArgumentNullException(nameof(prcsType));
-      this.Description= description ?? string.Empty;
-      this.Name= name ?? ProcedureType.Name;
+    protected AutoProcedurDescriptor(AutoProcessType<TMsg, TRes> prcsType) {
+      this.ProcessType= prcsType;
+      this.Description= string.Empty;
+      this.Name= GetType().FullName ?? GetType().Name;
     }
     ///<inheritdoc/>
     public IAutoProcessType ProcessType { get; }
