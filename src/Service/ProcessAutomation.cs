@@ -1,21 +1,29 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
-using Tlabs.Msg;
-using Tlabs.JobCntrl;
-using Tlabs.JobCntrl.Model;
-using Tlabs.JobCntrl.Model.Intern;
 using Tlabs.Proc.Common;
-using Tlabs.Proc.Service.Config.Job;
-using Tlabs.Misc;
-
 namespace Tlabs.Proc.Service {
 
   ///<summary>Process automation service.</summary>
   public class ProcessAutomation : IProcessAutomation {
+    /***TODO: Refactor the configuration.
+     *  Configuration comes from two sources:
+     *  1. DI/service provider
+     *     - Process types, Procedure descriptors and a default procedure configuration (enabled, hasResult)
+     *     - Default process restriction (TODO: The restrictions need to be separated,
+     *       because they need to be changed during runtime - process type is constant...)
+     *     - TODO: Default automation control settings (schedule and sequels)
+     *  2. Configuration loaded during runtime
+     *     - process restrictions
+     *     - automation control settings (schedule and sequels)
+     *     - Runtime changes very likely require to block any process execution until fully applied.
+     * 
+     *  Vision:
+     *  - Default configuration from DI/service provider must be exhaustive to serve as ground truth
+     *    and can be optional the sole configuration source (no runtime update required).
+     *  - Loaded config. used as fine-tuning customization with possibility to fall back to a factory reset of
+     *    of the default configuration.
+     */
     readonly IProcessAutomationConfig config;
     readonly IAutoProcessExecAgent execAgent;
 
@@ -38,8 +46,18 @@ namespace Tlabs.Proc.Service {
     public IEnumerable<IProcedureConfig> ProcessProcedures(IAutoProcessType pType) => config.ProcessProcedures(pType);
 
     ///<inheritdoc/>
+    public IEnumerable<ISequelControl> ProcessSequelsByPrecursor(IAutoProcessType precursorType, bool enabledOnly= true)
+      => config.ProcessSequelsByPrecursor(precursorType, enabledOnly);
+
+    ///<inheritdoc/>
+    public IEnumerable<ITimeScheduleControl> TimeSchedulesByType(IAutoProcessType pType) => config.TimeSchedulesByType(pType);
+
+    ///<inheritdoc/>
     public async Task<TRes> ExecuteProcess<TMsg, TRes>(IAutoProcessType pType, TMsg msg, int timeout= 0) where TRes : class
       => await execAgent.PublishExecutionRequest<TMsg, TRes>(pType, msg, timeout);
+
+    ///<inheritdoc/>
+    public void ScheduleProcessAsap(IAutoProcessType pType, string scheduleId) => config.ScheduleProcessAsap(pType, scheduleId);
   }
 
 }

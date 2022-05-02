@@ -21,7 +21,7 @@ namespace Tlabs.Proc.Service {
     public IAutoProcedureDescriptor ProcedureDescriptor(string name);
 
     ///<summary>Returns all <see cref="ISequelControl"/>(s) registered for <paramref name="precursorType"/> and optional <paramref name="enabledOnly"/>.</summary>
-    public IEnumerable<ISequelControl> ProcessSequelsByTypeType(IAutoProcessType precursorType, bool enabledOnly= true);
+    public IEnumerable<ISequelControl> ProcessSequelsByPrecursor(IAutoProcessType precursorType, bool enabledOnly= true);
 
     ///<summary>Returns all <see cref="ITimeScheduleControl"/>(s) registered for <paramref name="pType"/>.</summary>
     public IEnumerable<ITimeScheduleControl> TimeSchedulesByType(IAutoProcessType pType);
@@ -34,6 +34,10 @@ namespace Tlabs.Proc.Service {
 
     ///<summary>Set automation control <paramref name="sequel"/> as <paramref name="enabled"/>.</summary>
     public void SetControlSequel(ISequelControl sequel, bool enabled);
+
+    ///<summary>Schedule process with <paramref name="pType"/> with <paramref name="scheduleId"/> to run as soon as possible.</summary>
+    void ScheduleProcessAsap(IAutoProcessType pType, string scheduleId);
+
 
     ///<summary>Load configuration from <paramref name="strm"/>.</summary>
     public void LoadConfiguration(Stream strm);

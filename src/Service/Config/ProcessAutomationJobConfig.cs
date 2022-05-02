@@ -85,7 +85,7 @@ namespace Tlabs.Proc.Service.Config {
     }
 
     ///<inheritdoc/>
-    public IEnumerable<ISequelControl> ProcessSequelsByTypeType(IAutoProcessType precursorType, bool enabledOnly = true) {
+    public IEnumerable<ISequelControl> ProcessSequelsByPrecursor(IAutoProcessType precursorType, bool enabledOnly= true) {
       lock (syncLock) {
         var starterName= JobCfg.SequelStarterName(precursorType);
         var followupTypes= NamedPTypes.Values
@@ -132,6 +132,19 @@ namespace Tlabs.Proc.Service.Config {
         jobCntrlCfg.SetControlSequel(sequel, enabled);
       }
     }
+
+    ///<inheritdoc/>
+    public void ScheduleProcessAsap(IAutoProcessType pType, string scheduleId) {
+      lock (syncLock) {
+        var starterName= pType.ScheduledStarterName(scheduleId);
+        try {
+          var starter= jobCntrlRuntime.Starters[starterName];
+          starter.DoActivate(new Props());
+        }
+        catch (JobCntrlException e) { throw new AutoProcessExecutionException($"Process {pType.Name} is not scheduled with name: '{scheduleId}'.", e); }
+      }
+    }
+
     ///<inheritdoc/>
     public void LoadConfiguration(Stream strm) {
       lock (syncLock) configure(cfgSeri.LoadObj(strm));
@@ -171,7 +184,7 @@ namespace Tlabs.Proc.Service.Config {
                                    .SelectMany(ptype => TimeSchedulesByType(ptype))
                                    .Select(s => TimeScheduleControl.ToEntity(s)).ToList(),
         CntrlSequels=   NamedPTypes.Values
-                                   .SelectMany(ptype => ProcessSequelsByTypeType(ptype))
+                                   .SelectMany(ptype => ProcessSequelsByPrecursor(ptype))
                                    .Select(sq => SequelControl.ToEntity(sq)).ToList()
       };
     }
