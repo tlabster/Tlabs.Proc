@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-using Tlabs.Misc;
+using Tlabs.Data;
 using Tlabs.Proc.Common;
 
 namespace Tlabs.Proc.Service {
@@ -38,9 +38,14 @@ namespace Tlabs.Proc.Service {
     ///<summary>Schedule process with <paramref name="pType"/> with <paramref name="scheduleId"/> to run as soon as possible.</summary>
     void ScheduleProcessAsap(IAutoProcessType pType, string scheduleId);
 
-
     ///<summary>Load configuration from <paramref name="strm"/>.</summary>
     public void LoadConfiguration(Stream strm);
+
+    ///<summary>Load configuration from persistent <paramref name="store"/>.</summary>
+    public void LoadStoredConfig(IDataStore store);
+
+    ///<summary>Store configuration with persistent <paramref name="store"/>.</summary>
+    public void StorePersistentConfig(IDataStore store);
 
     ///<summary>With (exclusive configuration access) <paramref name="perform"/>.</summary>
     public T WithExclusiveAccess<T>(Func<T> perform);

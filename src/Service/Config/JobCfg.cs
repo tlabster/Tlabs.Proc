@@ -62,11 +62,11 @@ namespace Tlabs.Proc.Service.Config {
 
         Type autoJobType= typeof(Job.AutoProcessJob<,>).MakeGenericType(pType.MsgType, pType.ResultType);
         var autoMaster= MasterCntrlJobName(AutoCntrlName(pType));
-        jobCntrlCfg.DefineMasterJob(autoMaster, "LOP automation job", autoJobType.AssemblyQualifiedName, new Props {
+        jobCntrlCfg.DefineMasterJob(autoMaster, "Process control job", autoJobType.AssemblyQualifiedName, new Props {
           [BaseJob.PROP_LOGLEVEL]= "Debug",
           [Job.AutoProcessJob.PROP_PTYPE]= pType
         });
-        log.LogDebug("Automation job {name} for process {prcs} defined.", autoMaster, pType.Name);
+        log.LogDebug("Control job {name} for process {prcs} defined.", autoMaster, pType.Name);
       }
       return jobCntrlCfg;
     }

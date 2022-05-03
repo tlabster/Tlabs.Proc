@@ -8,33 +8,25 @@ namespace Tlabs.Proc.Service.Config {
   /*  Static storage helper class
    */
   internal static class ConfigStorage {
-    private static void With(Action<IDataStore> call) {
-      Tlabs.App.WithServiceScope(svcProv => {
-        call(svcProv.GetRequiredService<IDataStore>());
-      });
-    }
-
-    public static Data.AutoProcessCfgData Load() {
+    public static Data.AutoProcessCfgData Load(IDataStore store) {
       Data.AutoProcessCfgData? cfgData= null;
-      With(store => {
-        cfgData= new Data.AutoProcessCfgData {
-          PTypes=         store.UntrackedQuery<Data.AutoProcessCfgData.ProcessTypeData>()
-                               .ToList(),
-          Procedures=     store.UntrackedQuery<Data.AutoProcessCfgData.ProcedureData>()
-                               .LoadRelated(store, p => p.Properties)
-                               .ToList(),
-          CntrlSchedules= store.UntrackedQuery<Data.AutoProcessCfgData.ScheduleData>()
-                               .LoadRelated(store, t => t.MsgProps)
-                               .ToList(),
-          CntrlSequels=   store.UntrackedQuery<Data.AutoProcessCfgData.SequelData>()
-                               .ToList()
-        };
-      });
+      cfgData= new Data.AutoProcessCfgData {
+        PTypes=         store.UntrackedQuery<Data.AutoProcessCfgData.ProcessTypeData>()
+                              .ToList(),
+        Procedures=     store.UntrackedQuery<Data.AutoProcessCfgData.ProcedureData>()
+                              .LoadRelated(store, p => p.Properties)
+                              .ToList(),
+        CntrlSchedules= store.UntrackedQuery<Data.AutoProcessCfgData.ScheduleData>()
+                              .LoadRelated(store, t => t.MsgProps)
+                              .ToList(),
+        CntrlSequels=   store.UntrackedQuery<Data.AutoProcessCfgData.SequelData>()
+                              .ToList()
+      };
       if (null == cfgData) throw new AutoProcessException("Error loading configuration.");
       return cfgData;
     }
 
-    public static void Save(Data.AutoProcessCfgData cfgData) => With(store => {
+    public static void Save(Data.AutoProcessCfgData cfgData, IDataStore store) {
       cleanUp(store);
 
       //insert new config
@@ -53,9 +45,9 @@ namespace Tlabs.Proc.Service.Config {
         store.Insert(ent);
       }
       store.CommitChanges();
-    });
+    }
 
-    public static void CleanUp() => With(store => {
+    public static void CleanUp() => with(store => {
       cleanUp(store);
       store.CommitChanges();
     });
@@ -70,5 +62,12 @@ namespace Tlabs.Proc.Service.Config {
       foreach (var ent in store.UntrackedQuery<Data.AutoProcessCfgData.SequelData>())
         store.Delete(ent);
     }
+
+    private static void with(Action<Tlabs.Data.IDataStore> call) {
+      Tlabs.App.WithServiceScope(svcProv => {
+        call(svcProv.GetRequiredService<Tlabs.Data.IDataStore>());
+      });
+    }
+
   }
 }

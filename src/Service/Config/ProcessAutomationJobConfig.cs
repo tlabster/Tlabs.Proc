@@ -12,6 +12,7 @@ using Tlabs.Misc;
 using Tlabs.Data.Serialize;
 using Tlabs.Proc.Common;
 using Tlabs.Proc.Service.Config.Job;
+using Tlabs.Data;
 
 namespace Tlabs.Proc.Service.Config {
   using Props= Dictionary<string, object>;
@@ -147,7 +148,34 @@ namespace Tlabs.Proc.Service.Config {
 
     ///<inheritdoc/>
     public void LoadConfiguration(Stream strm) {
-      lock (syncLock) configure(cfgSeri.LoadObj(strm));
+      lock (syncLock) {
+        configure(cfgSeri.LoadObj(strm));
+        applyJobCntrlCfg();
+        // StorePersistentConfig();
+      }
+    }
+
+    ///<inheritdoc/>
+    public void LoadStoredConfig(IDataStore store) {
+      lock (syncLock) {
+        var lopCfg= ConfigStorage.Load(store);
+        log.LogInformation("Loaded {n} procedure configuration(s).", lopCfg.Procedures.Count);
+        log.LogInformation("Loaded {n} control sequel(s).", lopCfg.CntrlSequels.Count);
+        log.LogInformation("Loaded {n} control schedule(s).", lopCfg.CntrlSchedules.Count);
+        configure(lopCfg);
+        applyJobCntrlCfg();
+      }
+    }
+
+    ///<inheritdoc/>
+    public void StorePersistentConfig(IDataStore store) {
+      lock (syncLock) {
+        var lopCfg= currentConfig();
+        ConfigStorage.Save(lopCfg, store);
+        log.LogInformation("Saved {n} procedure configuration(s).", lopCfg.Procedures.Count);
+        log.LogInformation("Saved {n} control sequel(s).", lopCfg.CntrlSequels.Count);
+        log.LogInformation("Saved {n} control schedule(s).", lopCfg.CntrlSchedules.Count);
+      }
     }
 
     ///<inheritdoc/>
