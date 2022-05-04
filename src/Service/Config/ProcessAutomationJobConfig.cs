@@ -64,7 +64,7 @@ namespace Tlabs.Proc.Service.Config {
     }
 
     ///<inheritdoc/>
-    public IReadOnlyDictionary<string, IAutoProcessType> NamedPTypes { get; }
+    public IReadOnlyDictionary<string, IAutoProcessType> NamedPTypes { get; private set;}
 
     ///<inheritdoc/>
     public IEnumerable<IProcedureConfig> ProcessProcedures(IAutoProcessType pType) {
@@ -247,20 +247,23 @@ namespace Tlabs.Proc.Service.Config {
     }
 
     void applyProcessRestrictions(List<Data.AutoProcessCfgData.ProcessTypeData> pTypeData) {
+      var namedTypes= setupNamedPTypes(NamedPTypes.Values);
       foreach (var pdat in pTypeData) {
-        var pType= NamedPTypes[pdat.PType ?? "?"];
+        var pName= pdat.PType ?? "?";
+        var pType= NamedPTypes[pName];
 
         if (!string.IsNullOrEmpty(pdat.RestrictedStates))
-          pType.ExecRestriction= (AutoProcessRestriction)pdat.RestrictedStates;
+          namedTypes[pName]= pType.Copy((AutoProcessRestriction)pdat.RestrictedStates);
         else {
           var dflt= defaultConfig.PTypes.SingleOrDefault(d => d.PType == pdat.PType);
           if (!string.IsNullOrEmpty(dflt?.RestrictedStates))
-            pType.ExecRestriction= (AutoProcessRestriction)dflt.RestrictedStates;
-        }        
+            pType.Copy((AutoProcessRestriction)dflt.RestrictedStates);
+        }
       }
+      NamedPTypes= namedTypes;
     }
 
-    static IReadOnlyDictionary<string, IAutoProcessType> setupNamedPTypes(IEnumerable<IAutoProcessType> pTypes) {
+    static LookupTable<string, IAutoProcessType> setupNamedPTypes(IEnumerable<IAutoProcessType> pTypes) {
       try {
         var namedPTypes= new LookupTable<string, IAutoProcessType>(pTypes.ToDictionary(p => p.Name), name => throw new InvalidAutoProcessTypeException(name));
         log.LogDebug("{cnt} process types discovered from service provider.", namedPTypes.Count);

@@ -3,10 +3,10 @@
 namespace Tlabs.Proc.Common {
 
   ///<summary>Descriptor of a <typeparamref name="TProc"/> procedure implementing <see cref="IAutoProcedure{TMsg, TRes}"/>.</summary>
-  public abstract class AutoProcedurDescriptor<TProc, TMsg, TRes> : IAutoProcedureDescriptor<TMsg, TRes>
+  public abstract class AutoProcedureDescriptor<TProc, TMsg, TRes> : IAutoProcedureDescriptor<TMsg, TRes>
     where TProc : IAutoProcedure<TMsg, TRes> where TMsg : class where TRes : notnull {
     ///<summary>Ctor from <paramref name="prcsType"/>.</summary>
-    protected AutoProcedurDescriptor(AutoProcessType<TMsg, TRes> prcsType) {
+    protected AutoProcedureDescriptor(AutoProcessType<TMsg, TRes> prcsType) {
       this.ProcessType= prcsType;
       this.Description= string.Empty;
       this.Name= GetType().FullName ?? GetType().Name;
