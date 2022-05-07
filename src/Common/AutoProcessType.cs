@@ -4,7 +4,7 @@ namespace Tlabs.Proc.Common {
 
   ///<summary>Abstract automation process type descriptor for messsage type <typeparamref name="TMsg"/> with result <typeparamref name="TRes"/>.</summary>
   ///<remarks>
-  ///This base class is to faciliate the defintion of a <see cref="IAutoProcessType"/> with a process message as with:
+  ///This abstract base class is to faciliate the defintion of a <see cref="IAutoProcessType"/> with a process message as with:
   ///<code>
   ///public class MyProcessMsg {
   ///  public class PType : AutoProcessType&lt;MyProcessMsg, VoidUnit> {
@@ -13,7 +13,7 @@ namespace Tlabs.Proc.Common {
   ///}
   ///</code>
   ///</remarks>
-  public class AutoProcessType<TMsg, TRes> : AutoProcessType {
+  public abstract class AutoProcessType<TMsg, TRes> : AutoProcessType {
     ///<summary>Message type suffix.</summary>
     public const string MSG_SUFFIX= "Msg";
 
@@ -43,6 +43,7 @@ namespace Tlabs.Proc.Common {
 
   ///<summary>Automation process base type descriptor.</summary>
   public class AutoProcessType : IAutoProcessType {
+    ///<summary>Ctor from all properties.</summary>
     protected AutoProcessType(string name, Type msgType, Type resType, string description, AutoProcessRestriction? restriction= null) {
       this.Name= name;
       this.MsgType= msgType;
@@ -51,6 +52,7 @@ namespace Tlabs.Proc.Common {
       this.ExecRestriction= restriction;
     }
 
+    ///<summary>Copy ctor from other <paramref name="pType"/> and optional new <paramref name="restriction"/>.</summary>
     protected AutoProcessType(IAutoProcessType pType, AutoProcessRestriction? restriction= null) {
       this.Name= pType.Name;
       this.MsgType= pType.MsgType;

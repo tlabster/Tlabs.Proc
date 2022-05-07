@@ -30,7 +30,7 @@ namespace Tlabs.Proc.Service {
   ///<summary>Startup validation configurator.</summary>
   public class StartupValidation : IConfigurator<MiddlewareContext> {
     readonly ILogger log= Tlabs.App.Logger<StartupValidation>();
-    ///<inherit/>
+    ///<inheritdoc/>
     public void AddTo(MiddlewareContext mware, IConfiguration cfg) {
       var pAuto= Tlabs.App.ServiceProv.GetRequiredService<IProcessAutomation>(); //unscoped singleton
       if (!pAuto.AllProcessTypes.Any())

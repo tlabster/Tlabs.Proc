@@ -1,6 +1,5 @@
 using Xunit;
 
-using Tlabs.Core;
 using Tlabs.Proc.Common;
 using System.Collections.Generic;
 
@@ -66,7 +65,7 @@ namespace Tlabs.Proc.Service.Config.Job.Test {
     }
 
     public class TstProcedure : IAutoProcedure<TstProcessMsg, VoidUnit> {
-      public class Descriptor : AutoProcedurDescriptor<TstProcedure, TstProcessMsg, VoidUnit> {
+      public class Descriptor : AutoProcedureDescriptor<TstProcedure, TstProcessMsg, VoidUnit> {
         public Descriptor(AutoProcessType<TstProcessMsg, VoidUnit> prcsType) : base(prcsType) {
           Name= nameof(TstProcedure);
           Description= $"{Name} description";

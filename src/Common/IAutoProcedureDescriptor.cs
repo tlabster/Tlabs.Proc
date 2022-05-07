@@ -3,11 +3,25 @@
 namespace Tlabs.Proc.Common {
 
   ///<summary>Descriptor of a <typeparamref name="TProc"/> procedure implementing <see cref="IAutoProcedure{TMsg, TRes}"/>.</summary>
+  ///<remarks>
+  ///This abstract base class is to faciliate the defintion of a <see cref="IAutoProcedure{TMsg, TRes}"/> descriptor like:
+  ///<code>
+  ///public class MyProcedure : IAutoProcedure&lt;TstProcessMsg, VoidUnit> {
+  ///  public class Descriptor : AutoProcedureDescriptor&lt;MyProcedure, TstProcessMsg, VoidUnit> {
+  ///    public Descriptor(AutoProcessType&lt;MyProcessMsg, VoidUnit> pType) : base(pType) {
+  ///      Name= nameof(MyProcedure);
+  ///      Description= $"{Name} description";
+  ///    }
+  ///  }
+  /// ...
+  ///}
+  ///</code>
+  ///</remarks>
   public abstract class AutoProcedureDescriptor<TProc, TMsg, TRes> : IAutoProcedureDescriptor<TMsg, TRes>
     where TProc : IAutoProcedure<TMsg, TRes> where TMsg : class where TRes : notnull {
-    ///<summary>Ctor from <paramref name="prcsType"/>.</summary>
-    protected AutoProcedureDescriptor(AutoProcessType<TMsg, TRes> prcsType) {
-      this.ProcessType= prcsType;
+    ///<summary>Ctor from <paramref name="pType"/>.</summary>
+    protected AutoProcedureDescriptor(AutoProcessType<TMsg, TRes> pType) {
+      this.ProcessType= pType;
       this.Description= string.Empty;
       this.Name= GetType().FullName ?? GetType().Name;
     }
