@@ -21,9 +21,13 @@ namespace Tlabs.Proc {
 
   ///<summary>Interface of an process type descriptor.</summary>
   public interface IAutoProcessType : IAutomationDescriptor {
-    ///<summary>Unique operation message type.</summary>
+    ///<summary>Unique process message type.</summary>
+    ///<remarks>NOTE:
+    ///<para>Equality of a <see cref="IAutoProcessType"/> is determined by the <see cref="Type"/> returned from <see cref="MsgType"/>.#
+    ///For this the <see cref="MsgType"/> must be unique among all <see cref="IAutoProcessType"/>(s).</para>
+    ///</remarks>
     Type MsgType { get; }
-    ///<summary>Operation reuslt type.</summary>
+    ///<summary>Process reuslt type.</summary>
     Type ResultType { get; }
     /// <summary><see cref="AutoProcessRestriction"/> to be checked with a <see cref="IStatefulMessage"/>.</summary>
     /// <remarks>A process execution with a <see cref="IStatefulMessage"/> that matches the <see cref="AutoProcessRestriction"/> is refused.</remarks>

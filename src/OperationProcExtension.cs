@@ -47,10 +47,10 @@ namespace Tlabs.Proc {
     ///</item>
     ///</list>
     ///</remarks>
-    public static IServiceCollection AddOperationResultProcessor<TProc, TProcDesc, TMsg, TRes>(this IServiceCollection services) where TProc : class, IAutoProcedure<TMsg, TRes>
-                                                                                                                           where TProcDesc : AutoProcedureDescriptor<TProc, TMsg, TRes>, IAutoProcedureDescriptor
-                                                                                                                           where TMsg : class
-                                                                                                                           where TRes : notnull
+    public static IServiceCollection AddAutomationResultProcedure<TProc, TProcDesc, TMsg, TRes>(this IServiceCollection services) where TProc : class, IAutoProcedure<TMsg, TRes>
+                                                                                                                                  where TProcDesc : AutoProcedureDescriptor<TProc, TMsg, TRes>, IAutoProcedureDescriptor
+                                                                                                                                  where TMsg : class
+                                                                                                                                  where TRes : notnull
       => AddAutomationProcedure<TProc, TProcDesc, TMsg, TRes>(services, typeof(IResultAutoProcedureType));
 
     ///<summary>Register a per default enabled automation procedure of <typeparamref name="TProc"/> described by <typeparamref name="TProcDesc"/> with message <typeparamref name="TMsg"/> and result <typeparamref name="TRes"/>.</summary>
@@ -67,13 +67,13 @@ namespace Tlabs.Proc {
     ///</item>
     ///</list>
     ///</remarks>
-    public static IServiceCollection AddOperationDefaultProcessor<TProc, TProcDesc, TMsg, TRes>(this IServiceCollection services) where TProc : class, IAutoProcedure<TMsg, TRes>
-                                                                                                                           where TProcDesc : AutoProcedureDescriptor<TProc, TMsg, TRes>, IAutoProcedureDescriptor
-                                                                                                                           where TMsg : class
-                                                                                                                           where TRes : notnull
+    public static IServiceCollection AddAutomationDefaultProcedure<TProc, TProcDesc, TMsg, TRes>(this IServiceCollection services) where TProc : class, IAutoProcedure<TMsg, TRes>
+                                                                                                                                   where TProcDesc : AutoProcedureDescriptor<TProc, TMsg, TRes>, IAutoProcedureDescriptor
+                                                                                                                                   where TMsg : class
+                                                                                                                                   where TRes : notnull 
       => AddAutomationProcedure<TProc, TProcDesc, TMsg, TRes>(services, typeof(IDefaultAutoProcedureType));
 
-    ///<summary>Register operation processors of <typeparamref name="TProc"/> described by <typeparamref name="TProcDesc"/> with message <typeparamref name="TMsg"/> and result <typeparamref name="TRes"/>.</summary>
+    ///<summary>Register automation process procedure of <typeparamref name="TProc"/> described by <typeparamref name="TProcDesc"/> with message <typeparamref name="TMsg"/> and result <typeparamref name="TRes"/>.</summary>
     public static IServiceCollection AddAutomationProcedure<TProc, TProcDesc, TMsg, TRes>(this IServiceCollection services,
                                                                                          Type procType) where TProc : class, IAutoProcedure<TMsg, TRes>
                                                                                                         where TProcDesc : AutoProcedureDescriptor<TProc, TMsg, TRes>, IAutoProcedureDescriptor
@@ -93,7 +93,7 @@ namespace Tlabs.Proc {
     ///<list type="table">
     ///<item>
     ///<term><see cref="IAutoProcessType"/></term>
-    ///<description>Used to obtain a list of all operation types per DI (with <c>IEnumerable&lt;ILoyaltyOpType> opTypes</c>)
+    ///<description>Used to obtain a list of all automation process types per DI (with <c>IEnumerable&lt;ILoyaltyOpType> opTypes</c>)
     ///e.g. by a <see cref="IProcessAutomation"/> implementation(s).</description>
     ///</item>
     ///<item>
