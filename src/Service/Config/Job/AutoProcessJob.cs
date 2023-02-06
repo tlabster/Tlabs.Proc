@@ -52,7 +52,7 @@ namespace Tlabs.Proc.Service.Config.Job {
       );
     }
     ///<inheritdoc/>
-    protected override void DoDispose(bool disposing) {
+    protected override void Dispose(bool disposing) {
       if (!disposing) return;
     }
 
