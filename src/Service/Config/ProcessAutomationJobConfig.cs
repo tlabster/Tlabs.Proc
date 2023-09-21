@@ -263,9 +263,9 @@ namespace Tlabs.Proc.Service.Config {
       NamedPTypes= namedTypes;
     }
 
-    static LookupTable<string, IAutoProcessType> setupNamedPTypes(IEnumerable<IAutoProcessType> pTypes) {
+    static LookupDictionary<string, IAutoProcessType> setupNamedPTypes(IEnumerable<IAutoProcessType> pTypes) {
       try {
-        var namedPTypes= new LookupTable<string, IAutoProcessType>(pTypes.ToDictionary(p => p.Name), name => throw new InvalidAutoProcessTypeException(name));
+        var namedPTypes= new LookupDictionary<string, IAutoProcessType>(pTypes.ToDictionary(p => p.Name), name => throw new InvalidAutoProcessTypeException(name));
         log.LogDebug("{cnt} process types discovered from service provider.", namedPTypes.Count);
         return namedPTypes;
       }
