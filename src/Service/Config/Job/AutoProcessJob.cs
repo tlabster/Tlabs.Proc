@@ -24,7 +24,7 @@ namespace Tlabs.Proc.Service.Config.Job {
 
   ///<summary>Generic LOP automation job .</summary>
   public class AutoProcessJob<TMsg, TRes> : AutoProcessJob where TMsg : class where TRes : class {
-    static readonly ILogger logger= Tlabs.App.Logger<AutoProcessJob>();
+    // static readonly ILogger logger= Tlabs.App.Logger<AutoProcessJob>();
     readonly IProcessAutomation pauto;
     ///<summary>Ctor from <paramref name="pauto"/>.</summary>
     public AutoProcessJob(IProcessAutomation pauto) { this.pauto= pauto; }
