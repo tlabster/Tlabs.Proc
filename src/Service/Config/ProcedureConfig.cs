@@ -10,8 +10,8 @@ using Tlabs.Proc.Common;
 namespace Tlabs.Proc.Service.Config {
   using Props= Dictionary<string, object?>;
 
-  internal class ProcedureConfig : IProcedureConfig {
-    static readonly IReadOnlyDictionary<string, object?> EMPTY_PROPS= new Dictionary<string, object?>(); 
+  internal sealed class ProcedureConfig : IProcedureConfig {
+    static readonly IReadOnlyDictionary<string, object?> EMPTY_PROPS= new Dictionary<string, object?>();
     public static Data.AutoProcessCfgData.ProcedureData ToEntity(IProcedureConfig procCfg) {
       if (!procCfg.IsEnabled) throw new ArgumentException("Disabled procedure must not be a persisted as entity.");
       var json= JsonFormat.CreateDynSerializer();

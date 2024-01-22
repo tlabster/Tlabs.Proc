@@ -75,7 +75,7 @@ namespace Tlabs.Proc {
       }
     }
 
-    record Error(string Msg, Exception? Ex= null);
+    sealed record Error(string Msg, Exception? Ex= null);
 
     [GeneratedRegex("'[^ ]*Exception[^ ]* ")]
     private static partial Regex ExcRegex();

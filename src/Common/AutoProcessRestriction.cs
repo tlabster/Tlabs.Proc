@@ -47,7 +47,7 @@ namespace Tlabs.Proc.Common {
     ///<summary>Comma separated list of restricted state tokens.</summary>
     public override string ToString() => string.Join(", ", RstrictedStates);
 
-    private class StateTokenComparer : IEqualityComparer<string> {
+    private sealed class StateTokenComparer : IEqualityComparer<string> {
       public bool Equals(string? x, string? y) => StringComparer.Ordinal.Equals(x?.Trim(), y?.Trim());
       public int GetHashCode(string obj) => StringComparer.Ordinal.GetHashCode(obj);
     }

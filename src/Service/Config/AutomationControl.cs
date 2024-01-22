@@ -23,7 +23,7 @@ namespace Tlabs.Proc.Service.Config {
   }
 
 
-  internal class SequelControl : ProcessControl, Common.ISequelControl {
+  internal sealed class SequelControl : ProcessControl, Common.ISequelControl {
     public static Data.AutoProcessCfgData.SequelData ToEntity(Common.ISequelControl seq) =>
       new Data.AutoProcessCfgData.SequelData {
         Continuation= seq.ProcessType.Name,
@@ -41,7 +41,7 @@ namespace Tlabs.Proc.Service.Config {
     public bool IsEnabled { get; }
   }
 
-  internal class TimeScheduleControl : ProcessControl, Common.ITimeScheduleControl {
+  internal sealed class TimeScheduleControl : ProcessControl, Common.ITimeScheduleControl {
     // readonly object? message;
 
     public static Data.AutoProcessCfgData.ScheduleData ToEntity(Common.ITimeScheduleControl tsch) {
