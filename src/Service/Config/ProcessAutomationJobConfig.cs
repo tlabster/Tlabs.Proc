@@ -5,17 +5,13 @@ using System.IO;
 using Microsoft.Extensions.Logging;
 
 using Tlabs.JobCntrl;
-using Tlabs.JobCntrl.Model;
-using Tlabs.JobCntrl.Model.Intern;
-using Tlabs.JobCntrl.Model.Intern.Starter;
 using Tlabs.Misc;
 using Tlabs.Data.Serialize;
 using Tlabs.Proc.Common;
-using Tlabs.Proc.Service.Config.Job;
 using Tlabs.Data;
 
 namespace Tlabs.Proc.Service.Config {
-  using Props= Dictionary<string, object>;
+  using Props= Dictionary<string, object?>;
 
   ///<summary>Process automation service configuration implemented with <see cref="IJobControl"/> configuration.</summary>
   public class ProcessAutomationJobConfig : IProcessAutomationConfig {
@@ -105,12 +101,13 @@ namespace Tlabs.Proc.Service.Config {
 
     ///<inheritdoc/>
     public void SetProcedureStatus(IAutoProcedureDescriptor procDesc, bool enabled, bool resultReturning, IReadOnlyDictionary<string, object?>? @params= null) {
+      var par= @params ?? Enumerable.Empty<KeyValuePair<string, object?>>();
       lock (syncLock) {
         var jobName= procDesc.JobName();
         var procJob= jobCntrlCfg.JobCntrlCfg.ControlCfg.Jobs.FirstOrDefault(job => jobName == job.Name);
         if (enabled) {
           if (null != procJob) return;   //already enabled
-          if (!resultReturning) @params= new ConfigProperties(@params, new Props { [Job.AutoProcessJob.PROP_NO_RESULT]= true });
+          if (!resultReturning) @params= new ConfigProperties(par, EnumerableUtil.One(new KeyValuePair<string, object?>(Job.AutoProcessJob.PROP_NO_RESULT, true)));
           jobCntrlCfg.DefineJob(jobName, procDesc.Name, procDesc.ProcessType.StarterName(), procDesc.Description, @params);
         }
         else {
@@ -149,7 +146,7 @@ namespace Tlabs.Proc.Service.Config {
     ///<inheritdoc/>
     public void LoadConfiguration(Stream strm) {
       lock (syncLock) {
-        configure(cfgSeri.LoadObj(strm));
+        configure(cfgSeri.LoadObj(strm) ?? throw new AutoProcessException("Failed to load configuration"));
         applyJobCntrlCfg();
         // StorePersistentConfig();
       }

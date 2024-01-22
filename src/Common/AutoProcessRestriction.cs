@@ -13,10 +13,10 @@ namespace Tlabs.Proc.Common {
   }
 
   ///<summary>Process execution restrictions.</summary>
-  public class AutoProcessRestriction {
+  public partial class AutoProcessRestriction {
     //TODO: Add support for expression based restrictions.
     const string WBND= "\\b";
-    static readonly Regex STATE_PAT= new Regex(@"(\|*" +WBND+ @"(\w+)"  +WBND+ ").?", RegexOptions.Singleline | RegexOptions.Compiled);
+    static readonly Regex STATE_PAT= StateRegex();
     static readonly StateTokenComparer stateTokenComparer= new();
     readonly Regex tokPattern;
 
@@ -27,11 +27,11 @@ namespace Tlabs.Proc.Common {
     public static explicit operator AutoProcessRestriction(string[] restrictedStates) => new AutoProcessRestriction(restrictedStates);
 
     ///<summary>Ctor from <paramref name="stateTokens"/>.</summary>
-    public AutoProcessRestriction(params string[]? stateTokens) {
-      if (0 == stateTokens?.Length) throw new ArgumentNullException(nameof(stateTokens));
+    public AutoProcessRestriction(params string[] stateTokens) {
+      if (0 == stateTokens.Length) throw new ArgumentException(nameof(stateTokens));
       if (1 == stateTokens!.Length) stateTokens= stateTokens[0].Split(',').Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
       var pat= string.Join('|', stateTokens.Select(s => "\\b" + s.Trim() + "\\b"));
-      this.tokPattern= new Regex(pat, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.Compiled);
+      this.tokPattern= new Regex(pat, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline);
       if (!stateTokens.SequenceEqual(RstrictedStates, stateTokenComparer))
         throw new ArgumentException("Invalid state value", nameof(stateTokens));
     }
@@ -51,6 +51,9 @@ namespace Tlabs.Proc.Common {
       public bool Equals(string? x, string? y) => StringComparer.Ordinal.Equals(x?.Trim(), y?.Trim());
       public int GetHashCode(string obj) => StringComparer.Ordinal.GetHashCode(obj);
     }
+
+    [GeneratedRegex(@"(\|*\b(\w+)\b).?", RegexOptions.Singleline)]
+    private static partial Regex StateRegex();
   }
 
 }

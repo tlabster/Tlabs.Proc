@@ -30,7 +30,7 @@ namespace Tlabs.Proc.Service.Config.Job {
     public AutoProcessJob(IProcessAutomation pauto) { this.pauto= pauto; }
 
     ///<inheritdoc/>
-    protected override IJobResult InternalRun(IReadOnlyDictionary<string, object> runProperties) {
+    protected override IJobResult InternalRun(IReadOnlyDictionary<string, object?> runProperties) {
       var name= this.Name;
 
       if (  !runProperties.TryGetValue(PROP_PTYPE, out var o)
@@ -38,7 +38,7 @@ namespace Tlabs.Proc.Service.Config.Job {
 
       string propName;
       if (   runProperties.TryGetValue(Chained.RPROP_PREVIOUS_RESULTS, out o)
-          && o is IReadOnlyDictionary<string, object> prevRunProps) {
+          && o is IReadOnlyDictionary<string, object?> prevRunProps) {
         runProperties= prevRunProps;
         o= runProperties[propName= PROP_RESULT];
       }
@@ -48,7 +48,7 @@ namespace Tlabs.Proc.Service.Config.Job {
       return CreateAsyncResult(pauto.ExecuteProcess<TMsg, TRes>(pType, msg), processRes =>
           ConfigProperties.GetBool(this.Properties, PROP_NO_RESULT, false)
         ? CreateResult(true)   //suppress result
-        : CreateResult(new Dictionary<string, object> { [PROP_RESULT]= processRes })
+        : CreateResult(new Dictionary<string, object?> { [PROP_RESULT]= processRes })
       );
     }
     ///<inheritdoc/>

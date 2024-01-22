@@ -105,10 +105,11 @@ namespace Tlabs.Proc.Data.Xml {
       this.Add(typeof(AutoProcessCfgData.ProcessTypeData), nameof(AutoProcessCfgData.ProcessTypeData.RestrictedStates), xmlAttr);
     }
     ///<inheritdoc/>
-    public override AutoProcessCfgData Finished(AutoProcessCfgData cfg) => Finishing(cfg);
+    public override AutoProcessCfgData? Finished(AutoProcessCfgData? cfg) => Finishing(cfg);
 
     ///<summary>finishing by adding references from children to parents.</summary>
-    public static AutoProcessCfgData Finishing(AutoProcessCfgData cfg) {
+    public static AutoProcessCfgData? Finishing(AutoProcessCfgData? cfg) {
+      if (null == cfg) return cfg;
       foreach (var proc in cfg.Procedures) {
         foreach (var CfgProp in proc.Properties)
           CfgProp.Procedure= proc;
@@ -125,4 +126,4 @@ namespace Tlabs.Proc.Data.Xml {
 }
 
 
-  
+

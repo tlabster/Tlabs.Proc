@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <VersionPrefix>2.1.1</VersionPrefix>
+    <VersionPrefix>2.2.0</VersionPrefix>
     <TargetFramework>net8.0</TargetFramework>
     <OutputType>Library</OutputType>
+    <Nullable>enable</Nullable>
     <!--<RuntimeFrameworkVersion>6.0.1</RuntimeFrameworkVersion>-->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
@@ -11,14 +12,9 @@
     <Authors>Tlabs</Authors>
 
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <AnalysisLevel>6</AnalysisLevel>
     <AnalysisMode>Recommended</AnalysisMode>
     <AnalysisModeSecurity>All</AnalysisModeSecurity>
     <AnalysisModeNaming>None</AnalysisModeNaming>
-    <!--
-    <AnalysisLevel>6-recommended</AnalysisLevel>
-    -->
-    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup>
