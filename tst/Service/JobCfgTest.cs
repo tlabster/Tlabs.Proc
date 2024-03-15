@@ -46,7 +46,7 @@ namespace Tlabs.Proc.Service.Config.Job.Test {
       var cntrlName= tstPType.AutoCntrlName();
       Assert.EndsWith(JobCfg.CNTRL_SFX, cntrlName);
       Assert.EndsWith(JobCfg.MASTER_AUTOJOB_SFX, JobCfg.MasterCntrlJobName(cntrlName));
-      
+
       var starter= tstPType.StarterName();
       var cntrlJob= JobCfg.CntrlJobName(starter);
       Assert.Contains(starter, cntrlJob);
@@ -71,7 +71,7 @@ namespace Tlabs.Proc.Service.Config.Job.Test {
           Description= $"{Name} description";
         }
       }
-      public IAutoProcedure InitConfiguration(IReadOnlyDictionary<string, object> @params) {
+      public IAutoProcedure InitConfiguration(IReadOnlyDictionary<string, object?> @params) {
         throw new System.NotImplementedException();
       }
       public VoidUnit Execute(TstProcessMsg msg) {

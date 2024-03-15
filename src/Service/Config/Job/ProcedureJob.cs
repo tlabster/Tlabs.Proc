@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 using Tlabs.JobCntrl;
 using Tlabs.JobCntrl.Model;
@@ -24,11 +23,11 @@ namespace Tlabs.Proc.Service.Config.Job {
     }
 
     ///<inheritdoc/>
-    protected override IJobResult InternalRun(IReadOnlyDictionary<string, object> runProperties) {
-      TRes resVal= procedure.Execute((TMsg)runProperties[PROP_PROCESS_MSG]);
+    protected override IJobResult InternalRun(IReadOnlyDictionary<string, object?> runProperties) {
+      TRes resVal= procedure.Execute((TMsg)(runProperties[PROP_PROCESS_MSG] ?? throw EX.New<AutoProcessExecutionException>("Undefined '{property}' property", PROP_PROCESS_MSG)));
       if (noResult) return CreateResult(true);    //no result
 
-      var res= new Dictionary<string, object> {
+      var res= new Dictionary<string, object?> {
         [PROP_RESULT]= resVal
       };
       return CreateResult(res);

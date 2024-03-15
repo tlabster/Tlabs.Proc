@@ -32,23 +32,23 @@ namespace Tlabs.Proc.Service.Config {
     internal const string PROCEDURE_DELIM= "-=>";
 
 
-    internal static IReadOnlyDictionary<string, object> PARLL_STARTER_PROPS= new Dictionary<string, object> {
+    internal static Dictionary<string, object?> PARLL_STARTER_PROPS= new() {
       [MasterStarter.RPROP_PARALLEL_START]= true
     };
     static readonly ILogger log= App.Logger<IProcessAutomationConfig>();
 
     internal static IJobCntrlConfigurator SetupAutoProcessMasterStarter(this IJobCntrlConfigurator jobCntrlCfg)
       => jobCntrlCfg.DefineMasterStarter(MASTER_PROCESS_STARTER,
-                                        "Message based LOP-Job starter.",
-                                        typeof(MessageSubscription).AssemblyQualifiedName,
+                                        "Message based auto.process starter.",
+                                        typeof(MessageSubscription).AssemblyQualifiedName ?? $"?.{nameof(MessageSubscription)}",
                                         PARLL_STARTER_PROPS)  //enable parallel starter activation
                     .DefineMasterStarter(MASTER_CHAINED_STARTER,
-                                        "Follow-up LOP auto starter.",
-                                        typeof(Chained).AssemblyQualifiedName,
+                                        "Follow-up auto.process starter.",
+                                        typeof(Chained).AssemblyQualifiedName ?? $"?.{nameof(Chained)}",
                                         PARLL_STARTER_PROPS)  //enable parallel starter activation
                     .DefineMasterStarter(MASTER_SCHEDULE_STARTER,
-                                        "Time scheduled LOP auto starter.",
-                                        typeof(TimeSchedule).AssemblyQualifiedName);
+                                        "Time scheduled auto.process starter.",
+                                        typeof(TimeSchedule).AssemblyQualifiedName ?? $"?.{nameof(MessageSubscription)}");
 
     internal static IJobCntrlConfigurator SetupProcessJobCntrlMasters(this IJobCntrlConfigurator jobCntrlCfg, IEnumerable<IAutoProcessType> pTypes) {
       foreach (var pType in pTypes) {                 // Define a JobCntrl Starter and auto job for each pType:
@@ -62,7 +62,7 @@ namespace Tlabs.Proc.Service.Config {
 
         Type autoJobType= typeof(Job.AutoProcessJob<,>).MakeGenericType(pType.MsgType, pType.ResultType);
         var autoMaster= MasterCntrlJobName(AutoCntrlName(pType));
-        jobCntrlCfg.DefineMasterJob(autoMaster, "Process control job", autoJobType.AssemblyQualifiedName, new Props {
+        jobCntrlCfg.DefineMasterJob(autoMaster, "Process control job", autoJobType.AssemblyQualifiedName ?? $"?.{autoJobType.Name}", new Props {
           [BaseJob.PROP_LOGLEVEL]= "Debug",
           [Job.AutoProcessJob.PROP_PTYPE]= pType
         });
@@ -85,7 +85,7 @@ namespace Tlabs.Proc.Service.Config {
       foreach (var procDesc in allProcDescriptors) {                  // Define a master job for each procedure (descriptor):
         typedProcedures.Add(procDesc.ProcessType, procDesc);
         var jobType= typeof(Job.ProcedureJob<,,>).MakeGenericType(new Type[] { procDesc.ProcedureType, procDesc.ProcessType.MsgType, procDesc.ProcessType.ResultType });
-        jobCntrlCfg.DefineMasterJob(procDesc.Name, procDesc.Description, jobType.AssemblyQualifiedName, new Props {
+        jobCntrlCfg.DefineMasterJob(procDesc.Name, procDesc.Description, jobType.AssemblyQualifiedName ?? $"?.{jobType.Name}", new Props {
           [BaseJob.PROP_LOGLEVEL]= "Debug"
         });
         log.LogDebug("Auto. procedure master-job {name} defined.", procDesc.Name);
@@ -168,7 +168,7 @@ namespace Tlabs.Proc.Service.Config {
       }
     }
 
-    static ITimeScheduleControl asTimeScheduleCntrl(IAutoProcessType pType, JobCntrl.Config.JobCntrlCfg.StarterCfg scheduleStarter)
+    static TimeScheduleControl asTimeScheduleCntrl(IAutoProcessType pType, JobCntrl.Config.JobCntrlCfg.StarterCfg scheduleStarter)
       => new TimeScheduleControl(scheduleStarter.ScheduleId(),
                                  scheduleStarter?.Properties[TimeSchedule.PARAM_SCHEDULE_TIME] as string,
                                  pType,

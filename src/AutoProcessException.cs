@@ -10,44 +10,42 @@ namespace Tlabs.Proc {
   /// <summary>General automation process exception.</summary>
   public class AutoProcessException : Tlabs.GeneralException {
     /// <summary>Default ctor</summary>
-    public AutoProcessException() : this(null) { }
-
+    public AutoProcessException() : base() { }
     /// <summary>Ctor from message</summary>
-    public AutoProcessException(string? message) : this(message, null) { }
-
+    public AutoProcessException(string message) : base(message) { }
     /// <summary>Ctor from message and inner exception.</summary>
-    public AutoProcessException(string? message, Exception? e) : base(message, e) {
+    public AutoProcessException(string message, Exception e) : base(message, e) {
     }
   }
-  
+
   /// <summary>Invalid automation process type exception.</summary>
   public class InvalidAutoProcessTypeException : AutoProcessException {
     /// <summary>Ctor from message</summary>
-    public InvalidAutoProcessTypeException(string? message) : this(message, null) { }
+    public InvalidAutoProcessTypeException(string message) : base(message) { }
     /// <summary>Ctor from message and inner exception.</summary>
-    public InvalidAutoProcessTypeException(string? msg, Exception? e) : base(msg, e) { }
+    public InvalidAutoProcessTypeException(string msg, Exception e) : base(msg, e) { }
   }
 
   /// <summary>Automation process restriction violation exception.</summary>
   public class AutoPrcsRestrictionViolationException : AutoProcessException {
     /// <summary>Ctor from message and inner exception.</summary>
-    public AutoPrcsRestrictionViolationException(IAutoProcessType PType, IStatefulMessage? stfMsg)
-    : base($"Violation of process {PType.Name} restriction with state '{stfMsg?.StateCtx}'") {
-      this.SetMissingTemplateData(this.Message, PType.Name, stfMsg?.StateCtx);
+    public AutoPrcsRestrictionViolationException(IAutoProcessType PType, IStatefulMessage stfMsg)
+    : base($"Violation of process {PType.Name} restriction with state '{stfMsg.StateCtx ?? ""}'") {
+      this.SetMissingTemplateData(this.Message, PType.Name, stfMsg.StateCtx ?? "");
     }
   }
 
   /// <summary>Automation process execution exception.</summary>
-  public class AutoProcessExecutionException : AutoProcessException {
+  public partial class AutoProcessExecutionException : AutoProcessException {
     readonly List<Error> errors= new();
-    static readonly Regex r= new Regex("'[^ ]*Exception[^ ]* ", RegexOptions.Compiled);
+    static readonly Regex r= ExcRegex();
     readonly string processName;
     /// <summary>Ctor from process <paramref name="name"/>.</summary>
     public AutoProcessExecutionException(string name) { this.processName= name; }
     /// <summary>Ctor from process <paramref name="name"/> and <paramref name="message"/>.</summary>
     public AutoProcessExecutionException(string name, string message) : this(name) { errors.Add(new Error(message)); }
     static readonly char[] crlf= new char[] {'\r', '\n'};
-    
+
     /// <summary>Ctor from process <paramref name="name"/> and <paramref name="e"/>.</summary>
     public AutoProcessExecutionException(string name, Exception e): base(name, e) { this.processName= name; }
     /// <summary>Add procedure error.</summary>
@@ -64,18 +62,22 @@ namespace Tlabs.Proc {
       errors.Add(err);
       return err.Msg;
     }
-    
+
     ///<inheritdoc/>
-    public override string Message { 
+    public override string Message {
       get {
         var err= errors.FirstOrDefault(e => e.Ex != null)?.Ex;
         var msgTemplate= err?.MsgTemplate();
         if (string.IsNullOrEmpty(msgTemplate))
           return err?.Message ?? string.Empty;
-        return this.SetTemplateData(msgTemplate, err.TemplateData()?.Values.ToArray()).ResolvedMsgTemplate();
+        var data= (object[]?)err?.TemplateData()?.Values.Where(o => null != o).ToArray() ?? Array.Empty<object>();
+        return this.SetTemplateData(msgTemplate, data).ResolvedMsgTemplate();
       }
     }
 
-    record Error(string Msg, Exception? Ex= null);
+    sealed record Error(string Msg, Exception? Ex= null);
+
+    [GeneratedRegex("'[^ ]*Exception[^ ]* ")]
+    private static partial Regex ExcRegex();
   }
 }

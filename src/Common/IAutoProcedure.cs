@@ -11,7 +11,7 @@ namespace Tlabs.Proc.Common {
     /// (typically just <c>this</c>/>.</para>
     ///NOTE: Could be different (e.g. shared instance).
     ///</returns>
-    IAutoProcedure InitConfiguration(IReadOnlyDictionary<string, object> @params);
+    IAutoProcedure InitConfiguration(IReadOnlyDictionary<string, object?> @params);
 
     ///<summary>Execute procedure (synchronously) with messsage type <typeparamref name="TMsg"/> and result <typeparamref name="TRes"/>.</summary>
     TRes Execute(TMsg msg);

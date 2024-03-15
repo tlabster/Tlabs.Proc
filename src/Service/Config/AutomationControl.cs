@@ -23,7 +23,7 @@ namespace Tlabs.Proc.Service.Config {
   }
 
 
-  internal class SequelControl : ProcessControl, Common.ISequelControl {
+  internal sealed class SequelControl : ProcessControl, Common.ISequelControl {
     public static Data.AutoProcessCfgData.SequelData ToEntity(Common.ISequelControl seq) =>
       new Data.AutoProcessCfgData.SequelData {
         Continuation= seq.ProcessType.Name,
@@ -41,11 +41,11 @@ namespace Tlabs.Proc.Service.Config {
     public bool IsEnabled { get; }
   }
 
-  internal class TimeScheduleControl : ProcessControl, Common.ITimeScheduleControl {
+  internal sealed class TimeScheduleControl : ProcessControl, Common.ITimeScheduleControl {
     // readonly object? message;
 
     public static Data.AutoProcessCfgData.ScheduleData ToEntity(Common.ITimeScheduleControl tsch) {
-      var ent = new Data.AutoProcessCfgData.ScheduleData {
+      var ent= new Data.AutoProcessCfgData.ScheduleData {
         Process= tsch.ProcessType.Name,
         ScheduleId= tsch.ScheduleId,
         Time= tsch.TimePattern,
@@ -53,22 +53,22 @@ namespace Tlabs.Proc.Service.Config {
       if (null != tsch.Message) {
         /* Convert Message object into AutoProcessCfgData.MessageProp list
          */
-        var strm = new MemoryStream();
-        var json = JsonFormat.CreateDynSerializer();
+        var strm= new MemoryStream();
+        var json= JsonFormat.CreateDynSerializer();
         json.WriteObj(strm, tsch.Message);
         strm.Seek(0, SeekOrigin.Begin);
-        var dict = (Props)json.LoadObj(strm, typeof(Props));
-        ent.MsgProps= dict.Select(p => new Data.AutoProcessCfgData.MessageProp {
+        var dict= (Props?)json.LoadObj(strm, typeof(Props));
+        ent.MsgProps= (dict?.Select(p => new Data.AutoProcessCfgData.MessageProp {
           Name= p.Key,
           Value= p.Value?.ToString() ?? "",
           Type= Data.AutoProcessCfgData.PropTypeName(p.Value?.GetType())
-        }).ToList();
+        }) ?? Enumerable.Empty<Data.AutoProcessCfgData.MessageProp>()).ToList();
       }
       return ent;
     }
     public TimeScheduleControl(string Id, string? timePattern, IAutoProcessType pType, object? msgObj) : base(pType) {
       this.ScheduleId= Id;
-      if (null == timePattern) throw new ArgumentNullException(nameof(timePattern));
+      ArgumentNullException.ThrowIfNull(timePattern);
       this.TimePattern= timePattern;
       this.Message= msgObj;
     }
@@ -77,8 +77,8 @@ namespace Tlabs.Proc.Service.Config {
              entity.Time ?? "?",
              config.NamedPTypes[entity.Process ?? "?"],
              null) {
-      var json = JsonFormat.CreateDynSerializer();
-      var strm = new MemoryStream();
+      var json= JsonFormat.CreateDynSerializer();
+      var strm= new MemoryStream();
       json.WriteObj(strm, entity.MsgProps.ToDictionary(e => e.Name ?? "?", e => Data.AutoProcessCfgData.ConvertPropType(e.Type, e.Value)));
       strm.Seek(0, SeekOrigin.Begin);
       this.Message= json.LoadObj(strm, this.ProcessType.MsgType);
